@@ -8,3 +8,8 @@
 --index-url https://pypi.org/simple/   # pypi base pip index or local pip index
 
 --editable .  # install as editable
+
+termcolor
+hio
+opendht
+keri
