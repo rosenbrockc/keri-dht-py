@@ -3,7 +3,9 @@ import logging
 from collections import deque
 from contextlib import contextmanager
 from typing import Union
-from keri import help
+
+from keri.core.coring import Signer
+
 from hio.base import doing
 from hio.core.tcp import clienting
 import asyncio
@@ -14,6 +16,7 @@ from .methods import DhtGetterResource, DhtPutterResouce, IdGet, IdPut, IpGet, I
 from .app import TOCK
 from .node import PREFIX_SIZE
 from .utility import keyhash
+from .ipl import build_witness_ip
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +165,7 @@ class GenericClient(doing.DoDoer):
         return True
 
 
-class DhtClient(GenericClient):
+class DhtTcpClient(GenericClient):
     """Client object that can interact with the KDHT server endpoints to retrieve
     and put objects from/to the DHT.
 
@@ -176,7 +179,7 @@ class DhtClient(GenericClient):
             of the asynchronous calls.
     """
     def __init__(self, name, client, doers=None, **kwargs):
-        super(DhtClient, self).__init__(name, client, doers=doers, **kwargs)
+        super(DhtTcpClient, self).__init__(name, client, doers=doers, **kwargs)
         self.results = {}
 
 
@@ -212,7 +215,7 @@ class DhtClient(GenericClient):
             R["endpoint"] = endpoint.decode("utf8")
             R["method"] = method.decode("utf8")
 
-            result_key = DhtClient._get_results_key(R["endpoint"], R["method"], R["key"])
+            result_key = DhtTcpClient._get_results_key(R["endpoint"], R["method"], R["key"])
             self.results[result_key] = R
 
             log.info(f"Processed client result is {R}")
@@ -245,7 +248,7 @@ class DhtClient(GenericClient):
         log.debug(f"Appending {rqmsg} to the client pending queue.")
         self.pending.append(rqmsg)
 
-        result_key = DhtClient._get_results_key(endpoint, method, key)
+        result_key = DhtTcpClient._get_results_key(endpoint, method, key)
         return result_key
 
 
@@ -396,7 +399,28 @@ def get_client(name, server):
     port = int(port)
     log.debug(f"Creating doer-compatible TCP client `{name}` for {server}.")
     with clienting.openClient(clienting.Client, host=host, port=port, reconnectable=True, timeout=10) as client:
-        result = DhtClient(name, client, tock=TOCK)
+        result = DhtTcpClient(name, client, tock=TOCK)
         yield result
 
     result.shutdown()
+
+
+class DhtClient(object):
+    """A high-level client for performing indirect key-event state and witness
+    IP information lookups.
+    """
+    def __init__(self):
+        pass
+
+
+    async def set_witness_ip(self, signer:Signer, ip4:str=None, ip6:str=None):
+        """Updates the IP address for the *non-transferable* witness identifier
+        represented by `signer`. Note that the public key registered with the
+        DHT will be obtained from :attr:`Signer.verfer`.
+
+        Args:
+            signer (Signer): used to sign the request passed to the DHT.
+            ip4 (str): IPv4 address that this witness is listening at.
+            ip6 (str): IPv6 address that this witness is listening at.
+        """
+        payload = build_witness_ip(signer, ip4, ip6)

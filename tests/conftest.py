@@ -19,12 +19,12 @@ N_CLIENTS = 1
 DHT API requests.
 """
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def N0():
     return start_local(0)
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def nodes(N0):
     result = {0: N0}
     for i in range(1, N_SERVERS-1):
@@ -72,7 +72,7 @@ def client_tester(clients) -> TestClient:
     return TestClient("client-tester", clients, maxtests=5, tock=0.5)
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def server(clients, client_tester, N0):
     """Returns the first non-bootstrap node in the DHT.
     """

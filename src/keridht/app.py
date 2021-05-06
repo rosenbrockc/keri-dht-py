@@ -11,7 +11,7 @@ from keridht.utility import relpath, execute
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-logging.config.fileConfig(relpath('logging.conf'), disable_existing_loggers=False)
+logging.config.fileConfig(relpath('../logging.conf'), disable_existing_loggers=False)
 log = logging.getLogger(__name__)
 
 

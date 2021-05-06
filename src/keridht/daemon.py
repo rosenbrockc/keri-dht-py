@@ -7,12 +7,12 @@ import signal, threading
 import logging
 import logging.config
 
-from keridht.utility import reporoot
+from keridht.utility import relpath
 from keridht import msg
 from keridht.base import exhandler, bparser
 from keridht.app import start, shutdown as shutdown_app, DEFAULT_NODE_PORT, DEFAULT_API_PORT, DEFAULT_HOST
 
-logfile = path.join(reporoot, "logging.conf")
+logfile = relpath("../logging.conf")
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)

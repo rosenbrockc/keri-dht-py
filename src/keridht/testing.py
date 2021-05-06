@@ -8,7 +8,7 @@ from os import urandom
 from hio.base import doing
 
 from keridht.methods import METHODS
-from keridht.client import DhtClient
+from keridht.client import DhtTcpClient
 
 log = logging.getLogger(__name__)
 
@@ -74,14 +74,14 @@ class TestClient(doing.DoDoer):
             methods after a PUT.
     """
     PUT_METHODS = ["put_id_sync", "put_ip_sync"]
-    """list: of `str` method names on :class:`DhtClient` that can be used to put data
+    """list: of `str` method names on :class:`DhtTcpClient` that can be used to put data
     into the DHT.
     """
     GET_METHODS = {
         "id": "get_id_sync", 
         "ip": "get_ip_sync"
     }
-    """list: of `str` method names on :class:`DhtClient` that can be used to get data
+    """list: of `str` method names on :class:`DhtTcpClient` that can be used to get data
     from the DHT.
     """
 
@@ -187,7 +187,7 @@ class TestClient(doing.DoDoer):
     @doing.doize()
     def result_checker(self, tymist=None, tock=0.0, **opts):
         """ Returns Doist compatibile generator method (doer dog) to process
-        the :attr:`DhtClient.results` dictionary to see if any new results
+        the :attr:`DhtTcpClient.results` dictionary to see if any new results
         have become available.
         """
         while True and not self._shutting_down.is_set() and len(self.completed) < len(self.clients):
@@ -195,7 +195,7 @@ class TestClient(doing.DoDoer):
                 for result_key in self.pending[i].copy():
                     if result_key in client.results:
                         result = client.results.pop(result_key)
-                        endpoint, _, key = DhtClient.parse_result_key(result_key)
+                        endpoint, _, key = DhtTcpClient.parse_result_key(result_key)
 
                         if result["method"] == METHODS.PUT.name:
                             log.debug(f"{self.name}: received put result {result} for {result_key}.")
@@ -259,7 +259,7 @@ class TestClient(doing.DoDoer):
 
         Args:
             client_id (int): index of the client to use for the request.
-            method (str): class method on the :class:`DhtClient` class to execute.
+            method (str): class method on the :class:`DhtTcpClient` class to execute.
             args (tuple): of arguments to pass to `method`.
             key (str): unique key being addressed by this request.
         """
@@ -277,7 +277,7 @@ class TestClient(doing.DoDoer):
 
         Args:
             client_id (int): index of the client to use for the request.
-            method (str): class method on the :class:`DhtClient` class to execute.
+            method (str): class method on the :class:`DhtTcpClient` class to execute.
             args (tuple): of arguments to pass to `method`.
             key (str): unique key being addressed by this request.
         """

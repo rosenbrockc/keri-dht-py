@@ -24,3 +24,5 @@ mkdir build && cd build
 cmake -DOPENDHT_PYTHON=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
 make -j4
 make install
+
+pip install build/python
