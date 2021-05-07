@@ -34,8 +34,8 @@ def parse_verify_witness_ip(payload: bytearray):
     try:
         return _verify_witness_ip(payload)
     except:
-        # log.getEffectiveLevel()==logging.debug
-        log.error("While parsing and verifying witness IP information", exc_info=True)
+        log.error("While parsing and verifying witness IP information", 
+                  exc_info=log.getEffectiveLevel()==logging.debug)
 
 
 def _verify_witness_ip(payload: bytes) -> dict:
@@ -65,14 +65,15 @@ def _verify_witness_ip(payload: bytes) -> dict:
     signature = payload[body_end:body_end+ssize]
 
     # Note, we use the code MtrDex.Ed25519N by default since the witness
-    # key states are not transferrable.
-    verfer = Verfer(raw=body["v"], code=MtrDex.Ed25519N)
+    # key states are not transferrable. Since we are using fully-qualified
+    # crypto material, we don't have to worry about it anyway.
+    verfer = Verfer(qb64b=body["v"])
     result = None
     if not verfer.verify(signature, b):
         result = {
             "ip4": socket.inet_ntop(socket.AF_INET, body["4"]),
             "ip6": socket.inet_ntop(socket.AF_INET6, body["6"]),
-            "pk": body["v"],
+            "verfer": verfer,
             "timestamp": fromIso8601(body["t"])
         }
     else:
@@ -98,12 +99,12 @@ def build_witness_ip(signer:Signer, ip4:str=None, ip6:str=None):
     """
     assert ip4 is not None or ip6 is not None
     body = {
-        "v": signer.verfer.raw,  # 32 bytes for ED25519; may be different for others.
+        "v": signer.verfer.qb64b,
         "4": None if ip4 is None else socket.inet_pton(socket.AF_INET, ip4), # 4 bytes
         "6": None if ip6 is None else socket.inet_pton(socket.AF_INET6, ip6), # 16 bytes
         "t": nowIso8601() # 32 bytes
     }
-    # For ED25519 verfer, the total msgpack body will be 101 bytes. To make room
+    # For ED25519 verfer, the total msgpack body will be ~128 bytes. To make room
     # for additional (and perhaps quantum-proof) public keys later, we'll allow
     # a maximum of 1KB for the Witness IP payload. So we allow a maximum of three
     # bytes as the leading prefix which specifies how large the body payload is.

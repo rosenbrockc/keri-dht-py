@@ -3,6 +3,9 @@ import pytest
 from keri.core.coring import MtrDex, Nexter, Salter, Serder, Ilks, Prefixer
 from keri.core.eventing import Serials, Versify, Kever
 
+from keridht.kes import build_kes, parse_verify_kes
+from keridht.client import DhtClient
+
 @pytest.fixture
 def kever():
     # Setup inception key event dict
@@ -58,7 +61,21 @@ def kever():
 
     return Kever(serder=tser0, sigers=[tsig0])
 
-def test_kes(kever):
+
+@pytest.fixture
+def client() -> DhtClient:
+    """Constructs a DHT client for put/get operations to the DHT.
+    """
+    return DhtClient()
+
+
+@pytest.mark.asyncio
+async def test_kes(kever: Kever, client: DhtClient):
     """Tests the putting and getting of key-event state in the DHT.
     """
-    kes = kever.state() # We use the bytes in `raw`
+    payload = await build_kes(kever.state(), client)
+    kes = kever.state()
+    verfers = kes.verfers
+    vqbs = ','.join(v.qb64 for v in verfers)
+    kevers = await parse_verify_kes(vqbs, payload, client)
+    print(kevers)

@@ -4,19 +4,18 @@ from collections import deque
 from contextlib import contextmanager
 from typing import Union
 
-from keri.core.coring import Signer
+from keri.core.coring import Signer, Verfer
 
 from hio.base import doing
 from hio.core.tcp import clienting
 import asyncio
 
 from keridht.node import Requester
+from keri.core.eventing import Serder
 
 from .methods import DhtGetterResource, DhtPutterResouce, IdGet, IdPut, IpGet, IpPut
 from .app import TOCK
 from .node import PREFIX_SIZE
-from .utility import keyhash
-from .ipl import build_witness_ip
 
 log = logging.getLogger(__name__)
 
@@ -408,9 +407,53 @@ def get_client(name, server):
 class DhtClient(object):
     """A high-level client for performing indirect key-event state and witness
     IP information lookups.
+
+    Attributes:
+        auto_created (bool): when True, the TCP client was auto-created and
+            must be cleaned up on shutdown.
     """
-    def __init__(self):
-        pass
+    def __init__(self, tcp_client: DhtTcpClient = None, host="localhost", port=23700):
+        self.auto_created = False
+        if tcp_client is None:
+            self.auto_created = True
+            client = clienting.Client(host=host, port=port, reconnectable=True, timeout=10)
+            client.reopen()
+            tcp_client = DhtTcpClient("DhtClient", client)
+            
+        self.client = tcp_client
+
+
+    def close(self):
+        """Cleans up the TCP client connection.
+        """
+        self.client.client.close()        
+
+
+    async def get_kes_witnesses(self, kes: Serder):
+        """Retrieve IP information from the DHT for a list
+        of witnesses in a Key Event State (KES) message.
+
+        Args:
+            kes (Serder): most recent key-event state.
+
+        Returns:
+            list: of witness IP information dictionaries.
+        """
+        from .kes import get_witnesses_from_kes
+        witnesses = await asyncio.gather(*[self.client.get_ip(w) 
+                                           for w in get_witnesses_from_kes(kes)])
+        return witnesses
+
+
+    async def get_witness_ip(self, w: str):
+        """Gets the witness IP information for a witness `w`.
+
+        Args:
+            w (str): public key of the witness to retrieve IP information for.
+        """
+        from .ipl import parse_verify_witness_ip
+        payload = await self.client.get_ip(w)
+        return parse_verify_witness_ip(payload)
 
 
     async def set_witness_ip(self, signer:Signer, ip4:str=None, ip6:str=None):
@@ -423,4 +466,18 @@ class DhtClient(object):
             ip4 (str): IPv4 address that this witness is listening at.
             ip6 (str): IPv6 address that this witness is listening at.
         """
+        from .ipl import build_witness_ip
         payload = build_witness_ip(signer, ip4, ip6)
+        r = await self.client.put_ip(signer.verfer.qb64, payload)
+
+        return r
+
+
+    async def get_event_log(self, kes: Serder, w: Verfer):
+        """Retrieves the full event log for `kes` from witness `w`.
+
+        Args:
+            kes (Serder): latest key event state to get full event log for.
+            w (Verfer): representing the witness holding the key event log.
+        """
+        return {}

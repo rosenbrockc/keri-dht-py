@@ -19,4 +19,4 @@ def test_ip_roundtrip():
     assert r["ip4"] == "10.0.0.8"
     assert r["ip6"] == "a:ff:c2:43:91:5c::"
     assert (r["timestamp"] - now).seconds < 5
-    assert r["pk"] == s.verfer.raw
+    assert r["verfer"].raw == s.verfer.raw
