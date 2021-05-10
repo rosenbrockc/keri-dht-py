@@ -1,3 +1,5 @@
+[![Docker Image](https://github.com/rosenbrockc/keri-dht-py/actions/workflows/docker-image.yml/badge.svg)](https://github.com/rosenbrockc/keri-dht-py/actions/workflows/docker-image.yml)
+
 # KERI Discovery using a DHT in Python
 ## keri-dht-py
 
