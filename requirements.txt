@@ -12,5 +12,4 @@
 termcolor
 hio
 cython
-opendht
 keri
