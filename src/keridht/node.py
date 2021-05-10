@@ -280,7 +280,7 @@ class DhtDoer(DoDoer):
         self._shutdown.set()
 
 
-    def enter(self, doers, deeds=None):
+    def enter(self, doers=None, deeds=None):
         """Runs the DHT node on the configured port if it isn't already running.
         """
         log.debug(f"Running enter context for DhtDoer; node running {self.node.isRunning()}.")
@@ -519,7 +519,7 @@ class DhtServer(Doer):
             starts over itself at new ._tymists time
         """
         super(DhtServer, self).wind(tymist)
-        self.server.tymist = self._tymist
+        self.server.wind(tymist)
 
 
     def enter(self):
