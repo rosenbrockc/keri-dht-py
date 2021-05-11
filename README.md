@@ -24,7 +24,19 @@ below.
 
 ## Docker Container
 
-We plan to release a docker container with the DHT soon.
+Currently, the docker container is not available on any public repositories.
+To build it locally:
+
+```
+docker build . -t keri/dht:latest
+```
+
+Then you can run it using the existing `docker-compose.yml` file (which uses sensible
+defaults for everything), or directly using docker:
+
+```
+docker run --name keridht -d keri/dht:latest
+```
 
 # Background and Dependencies
 

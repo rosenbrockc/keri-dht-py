@@ -4,15 +4,9 @@ services:
     image: keri/dht:latest
     restart: always
     ports:
-      - 8099:8099
-    networks:
-      backend:
-        aliases: [keridht.local]
+      - 23713:23713
+      - 23700:23700
     environment:
       NODE_PORT: 23713
-      CONFIG_API_KEY: 209df471f6294df1825b93a813917901
-    extra_hosts:
-      - "keridht.local:0.0.0.0"
-
-networks:
-  backend:
+      API_HOST: 0.0.0.0
+      API_PORT: 23700
