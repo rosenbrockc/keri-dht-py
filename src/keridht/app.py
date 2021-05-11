@@ -61,6 +61,18 @@ processes in :data:`PROCESSES`.
 """
 
 
+def set_throttle(throttle):
+    """Changes the throttling parameter for the hio doist.
+
+    Args:
+        throttle (float): number of seconds between doist executions.
+    """
+    global TOCK
+    TOCK = throttle
+    if DOIST is not None:
+        DOIST.tock = throttle
+
+
 def start_local(index=0, virtualenv="keri", logdir=None):
     """Starts a local subprocess that includes an additional DHT node on an
     incremented port (based on index) as well as an API server.
