@@ -10,3 +10,5 @@ services:
       NODE_PORT: 23713
       API_HOST: 0.0.0.0
       API_PORT: 23700
+      DHT_BOOTSTRAP: localhost:23713
+      KERIDHT_THROTTLE: 0.01

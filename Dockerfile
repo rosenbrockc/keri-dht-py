@@ -1,5 +1,7 @@
 FROM ubuntu:20.04
 
+LABEL maintainer="rosenbrockc@gmail.com"
+
 RUN apt-get update && apt-get install -y \
         dialog apt-utils \
     && apt-get clean \
@@ -51,4 +53,7 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD [ "keridhtd" ]
+EXPOSE 23700
+EXPOSE 23713
+
+CMD keridhtd --bootstrap ${DHT_BOOTSTRAP:-default} --dhtlog ${DHT_LOGFILE:-/var/log/keridht.log} --throttle ${KERIDHT_THROTTLE:-0.01}
