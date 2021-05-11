@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y software-properties-common \
         libncurses5-dev libreadline-dev nettle-dev libcppunit-dev \
         libgnutls28-dev libuv1-dev libjsoncpp-dev libargon2-dev \
         libssl-dev libfmt-dev libhttp-parser-dev libasio-dev libmsgpack-dev \
+        libsodium-dev \
     && apt-get clean
 
 
