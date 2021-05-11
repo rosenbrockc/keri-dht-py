@@ -35,7 +35,7 @@ PORT = int(environ.get("API_PORT", DEFAULT_API_PORT))
 NODE_PORT = int(environ.get("NODE_PORT", DEFAULT_NODE_PORT))
 """int: port on which to run the DHT node.
 """
-TOCK = 0.1
+TOCK = 0.001
 """float: how often to run the scheduler for hio.
 """
 
@@ -100,6 +100,7 @@ def start_local(index=0, virtualenv="keri", logdir=None):
     if logdir is None:
         logdir = path.expanduser("~/temp")
     script_args = get_local_script_args(index, logdir)
+    log.debug(f"Starting DHT node #{index} and server with {script_args}.")
 
     out = open(path.join(logdir, f"stdout-{index}"), 'w')
     err =open(path.join(logdir, f"stderr-{index}"), 'w')

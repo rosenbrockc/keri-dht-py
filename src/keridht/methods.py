@@ -171,6 +171,7 @@ class DhtGetterResource(MethodResource):
         Args:
             results (LookupValues): DHT lookup key and values that the result pertains to.
         """
+        results.key = results.key[2:]
         d = prepare_default_result_dict(results.key, done, nodes)
         d["r"] = [r.data for r in results]
         R = msgpack.packb(d)
@@ -186,15 +187,17 @@ class DhtGetterResource(MethodResource):
             done (bool): indicating whether the DHT request completed.
             nodes (list): of :class:`opendht.Node` indicating nodes involved in the result.
         """
-        self.requester.results.append({
+        result = {
             "label": f"{self.endpoint}/get",
-            "result": self.marshal(results, done, nodes),
             "done": done,
             "nodes": nodes,
             # This two removes the endpoint prefix that we added to allow keys to be 
             # unique among endpoints.
             "key": results.key[2:]
-        })
+        }
+        result["result"] = self.marshal(results, done, nodes)
+        log.debug(f"Requester {self.requester} getting {result} on its queue.")
+        self.requester.results.append(result)
 
 
     def execute(self):
@@ -265,6 +268,7 @@ class DhtPutterResouce(MethodResource):
             "key": self.data["key"][2:] 
         }
         result["result"] = self.marshal(result)
+        log.debug(f"Requester {self.requester} getting {result} on its queue.")
         self.requester.results.append(result)
 
 

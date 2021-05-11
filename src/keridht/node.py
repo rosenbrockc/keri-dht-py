@@ -383,7 +383,7 @@ class Requester(tyming.Tymee):
         while self.results:  # iteratively process each cue in cues
             msgs = bytearray()
             r = self.results.popleft()
-            log.info("%s got result: %s\n", self.name, r)
+            log.debug("Requester %s got result: %s\n", self.name, r)
             msgs.extend(r["result"])
             yield r["label"], msgs
 
@@ -500,11 +500,12 @@ class DhtServer(Doer):
         #log.debug(f"{self.name}: servicing queries for {len(self.connections)} connections.")
         for ca, requester in self.connections.items():
             if requester.ims:
-                log.info("Server %s received:\n%s\n", self.name, requester.ims)
+                log.debug("Server %s received:\n%s\n", self.name, requester.ims)
                 requester.process()
-                for label, msg in requester.process_results_iter():
-                    requester.send(msg, label=label)
-                    break  # throttle just do one cue at a time
+
+            for label, msg in requester.process_results_iter():
+                requester.send(msg, label=label)
+                break  # throttle just do one cue at a time
 
             if not requester.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]

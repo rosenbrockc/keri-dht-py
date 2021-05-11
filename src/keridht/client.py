@@ -42,6 +42,7 @@ class GenericClient(doing.DoDoer):
         self.name = name
         self.client = client
         self.pending = deque()
+        self.retried = False
 
         client_doer = doing.ClientDoer(client)
         doers = doers if doers is not None else []
@@ -75,7 +76,7 @@ class GenericClient(doing.DoDoer):
             return True
 
         if self.client.rxbs:
-            log.info("Client %s received:\n%s\n...\n", self.name, self.client.rxbs[:1024])
+            log.debug("Client %s received:\n%s\n...\n", self.name, self.client.rxbs[:1024])
         done = yield from self.processor()  # process messages continuously
         return done  # should never get here except forced close
 
@@ -102,10 +103,12 @@ class GenericClient(doing.DoDoer):
             msg (bytes): response from DHT method that was executed.
         """
         if not self.client.connected or not self.client.accepted:
-            log.warning("The client is trying to send bytes but it isn't connected\n"
-                        f"connected={self.client.connected}; accepted={self.client.accepted}\n"
-                        f"host={self.client.host}:{self.client.port}.")
+            if self.retried:
+                log.warning("The client is trying to send bytes but it isn't connected\n"
+                            f"connected={self.client.connected}; accepted={self.client.accepted}\n"
+                            f"host={self.client.host}:{self.client.port}.")
             self.client.reopen()
+            self.retried = True
 
         self.client.tx(msg)
         log.debug("TCP sent %s:\n%s\n", label, bytes(msg))
@@ -119,7 +122,7 @@ class GenericClient(doing.DoDoer):
             # iteratively process each pending request.
             msgs = bytearray()
             r = self.pending.popleft()
-            log.info("%s got request: %s\n", self.name, r)
+            log.debug("%s got request: %s\n", self.name, r)
             msgs.extend(r["request"])
             yield r["label"], msgs
 
@@ -217,7 +220,7 @@ class DhtTcpClient(GenericClient):
             result_key = DhtTcpClient._get_results_key(R["endpoint"], R["method"], R["key"])
             self.results[result_key] = R
 
-            log.info(f"Processed client result is {R}")
+            log.debug(f"Processed client result is {R} at {result_key}")
 
             del ims[:PREFIX_SIZE+size]
 
@@ -419,7 +422,7 @@ class DhtClient(object):
             client = clienting.Client(host=host, port=port, reconnectable=True, timeout=10)
             client.reopen()
             tcp_client = DhtTcpClient("DhtClient", client)
-            
+
         self.client = tcp_client
 
 

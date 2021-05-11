@@ -114,7 +114,7 @@ class TestClient(doing.DoDoer):
 
 
     @doing.doize()
-    def test_scheduler(self, tymist=None, tock=0.25, **opts):
+    def test_scheduler(self, tymist=None, tock=0.0, **opts):
         """ Returns Doist compatibile generator method (doer dog) to add new
         DHT put operations to :attr:`puts` so that they will be processed by
         the scheduler and :meth:`client_puts`. Note that once a put request
@@ -128,8 +128,8 @@ class TestClient(doing.DoDoer):
 
             # See how many to schedule this round; don't want to do too many or the server
             # and client doers won't get to process any tx/rx.
-            process_count = 1#random.randint(1, 2)
-            client_ids = random.choices(range(len(self.clients)), k=process_count)
+            process_count = random.randint(1, 3)
+            client_ids = set(random.choices(range(len(self.clients)), k=process_count))
 
             for i in client_ids:
                 key = random_key(self.test_count)
@@ -159,7 +159,7 @@ class TestClient(doing.DoDoer):
         given key.
         """
         if result["done"] == True and len(result["nodes"]) > 0:
-            counts = random.randint(0, 5)
+            counts = random.randint(1, 5)
             client_id = random.randint(0, len(self.clients)-1)
             log.debug(f"Queueing random GET operation for {endpoint} and {key}; client={client_id}")
             r = {
@@ -173,7 +173,7 @@ class TestClient(doing.DoDoer):
             self.timing[key].append((f"{METHODS.GET.name}:{client_id}:o", time()))
 
         else:
-            log.info(f"PUT result {result} is not done or doesn't have any nodes.")
+            log.debug(f"PUT result {result} is not done or doesn't have any nodes.")
 
 
     def _verify_integrity(self, key, data):
@@ -190,23 +190,30 @@ class TestClient(doing.DoDoer):
         the :attr:`DhtTcpClient.results` dictionary to see if any new results
         have become available.
         """
-        while True and not self._shutting_down.is_set() and len(self.completed) < len(self.clients):
+        while not self._shutting_down.is_set() and len(self.completed) < len(self.clients):
             for i, client in enumerate(self.clients):
-                for result_key in self.pending[i].copy():
-                    if result_key in client.results:
-                        result = client.results.pop(result_key)
-                        endpoint, _, key = DhtTcpClient.parse_result_key(result_key)
+                if i in self.completed:
+                    continue
 
-                        if result["method"] == METHODS.PUT.name:
-                            log.debug(f"{self.name}: received put result {result} for {result_key}.")
-                            self._queue_random_get(endpoint, key, result)
-                        else:
-                            self._verify_integrity(key, result["result"])
+                for result_key in list(client.results.keys()):
+                    log.debug(f"Examining pending result for {result_key}.")
+                    result = client.results.pop(result_key)
+                    endpoint, _, key = DhtTcpClient.parse_result_key(result_key)
 
+                    if result["method"] == METHODS.PUT.name:
+                        log.debug(f"{self.name}: received put result {result} for {result_key}.")
+                        self._queue_random_get(endpoint, key, result)
+                    else:
+                        log.debug(f"{self.name}: received get result {result} for {result_key}.")
+                        self._verify_integrity(key, result["result"])
+
+                    if result_key in self.pending[i]:
                         self.pending[i].remove(result_key)
-                        self.timing[key].append((f"{result['method']}:{i}:i", time()))
+                    else:
+                        log.debug(f"Multiple result keys at single client {result_key}.")
+                    self.timing[key].append((f"{result['method']}:{i}:i", time()))
 
-                if self.test_count == self.maxtests:
+                if self.test_count >= self.maxtests:
                     # We want to check to see if any of the clients have finished
                     # all of their pending operations.
                     if len(client.results) == 0 and len(self.pending[i]) == 0:
@@ -267,6 +274,7 @@ class TestClient(doing.DoDoer):
         c = self.clients[client_id]
         if hasattr(c, method):
             result_key = getattr(c, method)(*args)
+            log.debug(f"Adding {result_key} to pending queue for client #{client_id} GET.")
             self.pending[client_id].add(result_key)
         else:
             log.warning(f"Method {method} does not exist on client #{client_id}.")
@@ -285,6 +293,7 @@ class TestClient(doing.DoDoer):
         c = self.clients[client_id]
         if hasattr(c, method):
             result_key = getattr(c, method)(*args)
+            log.debug(f"Adding {result_key} to pending queue for client #{client_id} PUT.")
             self.pending[client_id].add(result_key)
         else:
             log.warning(f"Method {method} does not exist on client #{client_id}.")
@@ -296,7 +305,7 @@ class TestClient(doing.DoDoer):
         """
         while len(self.gets) > 0 and not self._shutting_down.is_set():
             r = self.gets.popleft()
-            log.info("%s got GET request: %s\n", self.name, r)
+            log.debug("%s got GET request: %s\n", self.name, r)
             # client_id, method, args, key
             yield r["client_id"], r["method"], r["args"], r["key"]
 
@@ -316,6 +325,6 @@ class TestClient(doing.DoDoer):
         """
         while len(self.puts) > 0 and not self._shutting_down.is_set():
             r = self.puts.popleft()
-            log.info("%s got PUT request: %s\n", self.name, r)
+            log.debug("%s got PUT request: %s\n", self.name, r)
             # client_id, method, args, key
             yield r["client_id"], r["method"], r["args"], r["key"]

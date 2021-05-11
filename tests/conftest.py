@@ -1,5 +1,5 @@
 import pytest
-import os
+from os import path
 import logging
 import time
 
@@ -11,25 +11,28 @@ from keridht.testing import TestClient
 
 log = logging.getLogger(__name__)
 
-N_SERVERS = 2
+N_SERVERS = 4
 """int: number of servers and DHT nodes to start locally for the unit test.
 """
-N_CLIENTS = 1
+N_CLIENTS = 10
 """int: number of clients to target to *each* TCP server for generating
 DHT API requests.
 """
+VIRTUALENV = "keri389"
 
 @pytest.fixture(scope="session")
 def N0():
-    return start_local(0)
+    return start_local(0, virtualenv=VIRTUALENV)
 
 
 @pytest.fixture(scope="session")
 def nodes(N0):
     result = {0: N0}
+    # This -1 is because we have a `server` fixture below for the unit
+    # testing process that consumes the extra `1`.
     for i in range(1, N_SERVERS-1):
         log.debug(f"N{i}: using {N0['node']} for bootstrapping.")
-        result[i] = start_local(i)
+        result[i] = start_local(i, virtualenv=VIRTUALENV)
 
     return result
 
@@ -69,7 +72,7 @@ def client_tester(clients) -> TestClient:
     """Builds a client tester so that get/put tests can be simulated on the
     same scheduler.
     """
-    return TestClient("client-tester", clients, maxtests=5, tock=0.5)
+    return TestClient("client-tester", clients, maxtests=10000, tock=0.005)
 
 
 @pytest.fixture(scope="session")
@@ -78,8 +81,9 @@ def server(clients, client_tester, N0):
     """
     port, dhtport = N0["port"], N0["dhtport"]
     index = N_SERVERS-1
+    dhtlog = path.abspath(path.expanduser(f"~/temp/dht-{index}"))
     yield start(clients + [client_tester], port=port+index, dhtport=dhtport+index, 
-                bootstrap=N0["node"])
+                bootstrap=N0["node"], dhtlog=dhtlog)
 
     log.info("Pytest server fixture is cleaning up now.")
     shutdown()
